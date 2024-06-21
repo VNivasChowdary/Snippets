@@ -1,0 +1,101 @@
+pip install reportlab
+
+# Views.py
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+import datetime
+
+def invoice_form(request):
+    if request.method == 'POST':
+        # Retrieve data from POST request
+        invoice_number = request.POST.get('invoice_number', '12345')
+        customer_name = request.POST.get('customer_name', 'John Doe')
+        customer_address = request.POST.get('customer_address', '123 Elm Street, Springfield')
+        items_raw = request.POST.get('items', 'Item1:10\nItem2:20')
+        items = [line.split(':') for line in items_raw.split('\n') if ':' in line]
+
+        return generate_pdf(invoice_number, customer_name, customer_address, items)
+
+    return render(request, 'pdf_gen.html')
+
+def generate_pdf(invoice_number, customer_name, customer_address, items):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="invoice_{invoice_number}.pdf"'
+
+    buffer = response
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Header
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(72, height - 72, "Invoice")
+
+    # Date and Invoice Number
+    p.setFont("Helvetica", 12)
+    p.drawString(72, height - 108, f"Date: {datetime.date.today()}")
+    p.drawString(72, height - 126, f"Invoice Number: {invoice_number}")
+
+    # Customer Information
+    p.drawString(72, height - 162, f"Customer Name: {customer_name}")
+    p.drawString(72, height - 180, f"Customer Address: {customer_address}")
+
+    # Table Header
+    p.setFont("Helvetica-Bold", 12)
+    p.setFillColor(colors.gray)
+    p.rect(72, height - 216, 468, 18, fill=1)
+    p.setFillColor(colors.white)
+    p.drawString(78, height - 210, "Item")
+    p.drawString(396, height - 210, "Price")
+
+    # Table Data
+    p.setFont("Helvetica", 12)
+    p.setFillColor(colors.black)
+    y = height - 252
+    for item in items:
+        p.drawString(78, y, item[0].strip())
+        p.drawString(396, y, item[1].strip())
+        y -= 18
+
+    # Total
+    total = sum(float(item[1].replace('$', '').strip()) for item in items)
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(324, y - 18, f"Total: ${total:.2f}")
+
+    # Finalize the PDF
+    p.showPage()
+    p.save()
+
+    return response
+
+
+# reference HTML File
+
+<!-- myapp/templates/invoice_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice Form</title>
+</head>
+<body>
+    <h1>Invoice Form</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="invoice_number">Invoice Number:</label>
+        <input type="text" id="invoice_number" name="invoice_number" value="12345"><br><br>
+
+        <label for="customer_name">Customer Name:</label>
+        <input type="text" id="customer_name" name="customer_name" value="John Doe"><br><br>
+
+        <label for="customer_address">Customer Address:</label>
+        <textarea id="customer_address" name="customer_address">123 Elm Street, Springfield</textarea><br><br>
+
+        <label for="items">Items (name:price, one per line):</label><br>
+        <textarea id="items" name="items">Item1:10</textarea><br><br>
+
+        <button type="submit">Generate PDF</button>
+    </form>
+</body>
+</html>
