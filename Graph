@@ -1,0 +1,111 @@
+# Views.py
+
+
+def demo_data(request):
+    data = [
+        {'farmer_name': 'John Doe', 'yield_amount': 100, 'soil_type': 'Loamy', 'irrigation_method': 'Drip'},
+        {'farmer_name': 'Jane Smith', 'yield_amount': 150, 'soil_type': 'Sandy', 'irrigation_method': 'Flood'},
+        {'farmer_name': 'Jim Brown', 'yield_amount': 200, 'soil_type': 'Clay', 'irrigation_method': 'Sprinkler'}
+    ]
+    return JsonResponse(data, safe=False)
+
+def chart_home(request):
+    return render(request,'chart.html')
+
+
+# chat.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Data Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+canvas {
+    display: block;
+    margin: 0 auto;
+}
+
+    </style>
+</head>
+<body>
+    <h1>Farmer Data Visualization</h1>
+    <div>
+        <label><input type="checkbox" id="toggleYield" checked> Show Yield</label>
+        <label><input type="checkbox" id="toggleSoil" checked> Show Soil Type</label>
+        <label><input type="checkbox" id="toggleIrrigation" checked> Show Irrigation Method</label>
+    </div>
+    <canvas id="yieldChart"></canvas>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/demo_data/')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('yieldChart').getContext('2d');
+                    const yieldChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(item => item.farmer_name),
+                            datasets: [
+                                {
+                                    label: 'Yield Amount',
+                                    data: data.map(item => item.yield_amount),
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Soil Type',
+                                    data: data.map(item => item.soil_type),
+                                    backgroundColor: 'rgba(192, 75, 192, 0.2)',
+                                    borderColor: 'rgba(192, 75, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Irrigation Method',
+                                    data: data.map(item => item.irrigation_method),
+                                    backgroundColor: 'rgba(192, 192, 75, 0.2)',
+                                    borderColor: 'rgba(192, 192, 75, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                    document.getElementById('toggleYield').addEventListener('change', function () {
+                        yieldChart.data.datasets[0].hidden = !this.checked;
+                        yieldChart.update();
+                    });
+                    document.getElementById('toggleSoil').addEventListener('change', function () {
+                        yieldChart.data.datasets[1].hidden = !this.checked;
+                        yieldChart.update();
+                    });
+                    document.getElementById('toggleIrrigation').addEventListener('change', function () {
+                        yieldChart.data.datasets[2].hidden = !this.checked;
+                        yieldChart.update();
+                    });
+                });
+        });
+    </script>
+</body>
+</html>
+
