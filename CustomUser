@@ -1,0 +1,84 @@
+# Settings.py
+
+# Custom User Model
+AUTH_USER_MODEL = 'myapp.CustomUser'  # Change the myapp to the adminapp which you have created
+
+# Forms.py
+from django import forms
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from .models import CustomUser
+
+class CustomUserCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = CustomUser
+        fields = ('email', 'first_name', 'last_name', 'date_of_birth', 'mobile_number', 'location')
+
+class CustomUserChangeForm(UserChangeForm):
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'first_name', 'last_name', 'date_of_birth', 'mobile_number', 'location')
+
+
+
+# Admin.py ---------------------------------------------------------------------------
+
+
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser
+
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
+    list_display = ('email', 'first_name', 'last_name', 'mobile_number', 'location', 'is_staff')
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'date_of_birth', 'mobile_number', 'location')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser',
+                                    'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'first_name', 'last_name', 'date_of_birth', 'mobile_number', 'location', 'password1', 'password2'),
+        }),
+    )
+    search_fields = ('email', 'first_name', 'last_name', 'mobile_number', 'location')
+    ordering = ('email',)
+
+admin.site.register(CustomUser, CustomUserAdmin)
+
+
+
+# Example of creating ------------------------------------------------------------------------------------------------------------
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
+CustomUser = get_user_model()
+
+def add_user(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        date_of_birth = request.POST.get('date_of_birth')
+        mobile_number = request.POST.get('mobile_number')
+        location = request.POST.get('location')
+        password = request.POST.get('password')
+        user = CustomUser.objects.create(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            date_of_birth=date_of_birth,
+            mobile_number=mobile_number,
+            location=location,
+            password=make_password(password)
+        )
+        return redirect('user_list')
+    return render(request, 'add_user.html')
+
+def user_list(request):
+    users = CustomUser.objects.all()
+    return render(request, 'user_list.html', {'users': users})
+
+
+
